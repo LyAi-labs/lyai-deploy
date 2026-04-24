@@ -134,6 +134,23 @@ else
   echo ""; echo "⚠  Backend no responde — revisa: journalctl -u lyai-backend -n 30"
 fi
 
+
+echo ""; echo "▶  [EXTRA] SSL — Let's Encrypt + Hetzner DNS"; echo ""
+pip3 install certbot certbot-dns-hetzner -q 2>&1 | tail -2
+mkdir -p /etc/letsencrypt
+cat > /etc/letsencrypt/hetzner.ini << 'HCREDS'
+dns_hetzner_api_token = Zr6NQwk9mo1OjBnxGIoHABvbKtE03yVbi1r5exPQFyfuUDEmjkeIDGzIWC7wJui1
+HCREDS
+chmod 600 /etc/letsencrypt/hetzner.ini
+pip3 install cffi --ignore-installed --target /usr/local/lib/python3.$(python3 -c "import sys;print(sys.version_info.minor)")/dist-packages -q 2>&1 | tail -1
+certbot certonly --authenticator dns-hetzner \
+  --dns-hetzner-credentials /etc/letsencrypt/hetzner.ini \
+  -d lyai.ch -d www.lyai.ch \
+  --non-interactive --agree-tos -m lyai.pro@hotmail.com 2>&1
+
+# Reload nginx with SSL
+nginx -t && (systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null)
+
 echo ""
 echo "═══════════════════════════════════════"
 echo "  ✅  LyAi instalado en $LYAI_DIR"
